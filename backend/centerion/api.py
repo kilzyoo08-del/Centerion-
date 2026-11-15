@@ -28,10 +28,12 @@ def health():
     return {"name":"Centerion","status":"online","cores":["chat","files","code","memory"],"vision":"not_configured"}
 
 @app.post("/answer")
-def chat(req: ChatRequest):
+def chat(message: str = Form(...), user_id: str = Form("android_user")):
+    if not message.strip() or len(message) > 12000:
+        raise HTTPException(422,"Сообщение пустое или слишком длинное.")
     try:
-        core = choose_core(req.message)
-        return {"answer":answer(req.user_id,req.message),"core":core}
+        core = choose_core(message)
+        return {"answer":answer(user_id,message),"core":core}
     except Exception as exc:
         raise HTTPException(status_code=503,detail=f"Centerion chat core unavailable: {exc}")
 
