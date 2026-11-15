@@ -50,6 +50,9 @@ object CenterionApi {
     }
 
 
+    fun sendPhoto(context: Context, uri: Uri, question: String): String =
+        uploadMultipart(context, uri, question, "/media")
+
     fun sendFile(context: Context, uri: Uri, question: String): String {
         return uploadMultipart(context, uri, question, "/files")
     }
