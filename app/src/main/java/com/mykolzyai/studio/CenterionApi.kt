@@ -92,7 +92,7 @@ object CenterionApi {
     }
 
     private fun uploadMultipart(context: Context, uri: Uri, question: String, endpoint: String): String {
-        val boundary = "Centerion-\${UUID.randomUUID()}"
+        val boundary = "Centerion-${UUID.randomUUID()}"
         val connection = (URL("$BASE_URL$endpoint").openConnection() as HttpURLConnection)
         return try {
             connection.requestMethod = "POST"
