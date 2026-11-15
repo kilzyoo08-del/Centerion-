@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,7 +124,7 @@ fun KolzaiChatScreen() {
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val chatPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> chatPhotoUri = uri }
 
-    MaterialTheme(colorScheme = darkColorScheme(
+    MaterialTheme(colorScheme = lightColorScheme(
         primary = Accent, background = Bg, surface = SurfaceDark,
         onBackground = TextMain, onSurface = TextMain
     )) {
@@ -129,9 +133,13 @@ fun KolzaiChatScreen() {
             topBar = {
                 TopAppBar(
                     title = {
-                        Column {
-                            Text("Centerion", fontWeight = FontWeight.Bold, fontSize = 21.sp)
-                            Text("ИИ-помощник", color = TextMuted, fontSize = 11.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CenterionLogo(Modifier.size(38.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text("Centerion", fontWeight = FontWeight.Bold, fontSize = 21.sp)
+                                Text("ИИ-помощник", color = TextMuted, fontSize = 11.sp)
+                            }
                         }
                     },
                     navigationIcon = {
@@ -215,8 +223,8 @@ fun KolzaiChatScreen() {
                     if (messages.isEmpty()) {
                         Column(Modifier.fillMaxSize().padding(horizontal = 24.dp),
                             verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(Modifier.size(58.dp).background(SurfaceDark, CircleShape), contentAlignment = Alignment.Center) {
-                                Text("K", color = TextMain, fontWeight = FontWeight.Bold, fontSize = 29.sp)
+                            Box(Modifier.size(76.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                                CenterionLogo(Modifier.size(68.dp))
                             }
                             Spacer(Modifier.height(18.dp))
                             Text("Чем могу помочь?", color = TextMain, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
@@ -270,5 +278,31 @@ private fun ChoicePill(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun SuggestionChip(label: String, onClick: () -> Unit) {
     Surface(color = SurfaceDark, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable(onClick = onClick)) {
         Text(label, color = TextMain, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 13.dp, vertical = 10.dp))
+    }
+}
+
+
+@Composable
+private fun CenterionLogo(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        val radius = size.minDimension * 0.44f
+        drawCircle(Color(0xFF080808), radius = radius, center = center)
+        drawCircle(Color.White, radius = radius * 0.52f, center = center)
+        drawRect(
+            color = Color.White,
+            topLeft = Offset(center.x + radius * 0.28f, center.y - radius * 0.42f),
+            size = Size(radius * 0.9f, radius * 0.84f)
+        )
+        drawArc(
+            color = Color(0xFFBDBDBD),
+            startAngle = -25f,
+            sweepAngle = 210f,
+            useCenter = false,
+            topLeft = Offset(center.x - radius * 1.05f, center.y - radius * 0.56f),
+            size = Size(radius * 2.1f, radius * 1.12f),
+            style = Stroke(width = size.minDimension * 0.035f)
+        )
+        drawCircle(Color(0xFF080808), radius = radius * 0.12f, center = center)
     }
 }
