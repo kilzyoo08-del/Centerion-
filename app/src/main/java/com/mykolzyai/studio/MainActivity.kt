@@ -182,16 +182,16 @@ fun KolzaiChatScreen() {
                                         draft = ""
                                         chatPhotoUri = null
                                         isThinking = true
-                                        thinkingStage = if (wantsWebSearch(question)) "Поиск страниц в интернете…" else "Анализ запроса и поиск в локальной базе…"
+                                        thinkingStage = if (image != null) "Отправляю фото в Centerion…" else "Centerion думает…"
                                         Thread {
                                             val answer = try {
-                                                if (image == null && wantsWebSearch(question)) {
-                                                    webSearchReply(question)
+                                                if (image != null) {
+                                                    CenterionApi.sendPhoto(context, image, question)
                                                 } else {
-                                                    offlineKnowledgeReply(question, image != null)
+                                                    CenterionApi.sendMessage(question)
                                                 }
                                             } catch (error: Exception) {
-                                                "Не удалось выполнить поиск: ${error.message ?: "проверь подключение к интернету"}. Попробуй ещё раз позже."
+                                                "Не удалось связаться с Centerion: ${error.message ?: "проверь подключение к серверу"}. Попробуй ещё раз."
                                             }
                                             mainHandler.post {
                                                 messages = messages + ChatMessage(answer, false)
