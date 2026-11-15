@@ -1,34 +1,35 @@
-# Centerion — Android app
+# Centerion — Android app and modular AI backend
 
-Android-приложение на Kotlin + Jetpack Compose.
+Android-приложение на Kotlin + Jetpack Compose и отдельный Python backend.
 
-## Текущие функции
+## Android
 
-- Чат Centerion с отправкой текстовых сообщений на сервер через `POST /answer`.
-- Выбор изображения на устройстве и отправка на сервер через `POST /media`.
-- Отображение выбранного изображения в переписке.
-- Светлый интерфейс.
+- Чат отправляет текст на Centerion API через `POST /answer`.
+- Можно выбрать изображение; Android-клиент отправляет его на `POST /media`.
+- Вкладка генерации видео удалена.
+- Методы API-клиента для документов, генерации кода и памяти добавлены, но соответствующие действия ещё не выведены в интерфейс чата.
 
-## Сервер
+## Backend cores
 
-Приложение обращается к Centerion API. Текущий адрес ngrok прописан в `CenterionApi.kt` и является временным: после перезапуска туннеля его нужно обновить.
+Исходники backend находятся в `backend/centerion`:
 
-Ожидаемые маршруты:
-- `GET /health`
-- `POST /answer` — поля формы `message`, `user_id`.
-- `POST /media` — multipart-поля `file`, `question`.
+- Chat core — ответы через загруженную языковую модель.
+- Files core — извлечение и анализ PDF, DOCX, XLSX, CSV, TXT, Markdown и исходного кода.
+- Code core — генерация кода и ограниченная статическая проверка Python/JSON; код не запускается.
+- Memory core — SQLite для истории диалога и сохранённых фактов.
+- Orchestrator — маршрутизация задач к ядрам.
 
-**Важно:** отправка фотографии из Android-клиента реализована, но полноценное распознавание изображения зависит от работающего серверного vision-модуля и должно быть проверено отдельным тестом. Нельзя считать анализ фото подтверждённым только по факту отправки файла.
+## Не завершено
+
+- Vision core пока не настроено: `POST /media` возвращает HTTP 501, пока не установлена и не протестирована модель зрения.
+- Android UI для загрузки документов, программирования и управления памятью ещё нужно подключить.
+- Постоянное хранение за пределами Kaggle требует постоянного хранилища; локальная SQLite в эфемерной Kaggle-сессии не гарантирует сохранность после удаления runtime.
+- Требуется end-to-end тестирование и защита API перед публичным использованием.
+
+## Backend setup
+
+Смотри [backend/README_RU.md](backend/README_RU.md).
 
 ## Сборка APK
 
-Workflow CodeMagic: `android-debug`.
-Тип машины: `mac_mini_m2`.
-Сборка создаёт debug APK: `app/build/outputs/apk/debug/app-debug.apk`.
-
-## Технологии
-
-- Kotlin
-- Jetpack Compose
-- Android Gradle Plugin
-- Centerion API
+CodeMagic workflow: `android-debug`, тип машины `mac_mini_m2`.
