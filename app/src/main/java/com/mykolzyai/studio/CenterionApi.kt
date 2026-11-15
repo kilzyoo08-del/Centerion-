@@ -51,10 +51,10 @@ object CenterionApi {
 
 
     fun sendPhoto(context: Context, uri: Uri, question: String): String =
-        uploadMultipart(context, uri, question, "/media")
+        uploadMultipart(context, uri, question, "/media", "image")
 
     fun sendFile(context: Context, uri: Uri, question: String): String {
-        return uploadMultipart(context, uri, question, "/files")
+        return uploadMultipart(context, uri, question, "/files", null)
     }
 
     fun generateCode(task: String, language: String = "python"): String {
@@ -91,7 +91,7 @@ object CenterionApi {
         }
     }
 
-    private fun uploadMultipart(context: Context, uri: Uri, question: String, endpoint: String): String {
+    private fun uploadMultipart(context: Context, uri: Uri, question: String, endpoint: String, kind: String?): String {
         val boundary = "Centerion-${UUID.randomUUID()}"
         val connection = (URL("$BASE_URL$endpoint").openConnection() as HttpURLConnection)
         return try {
@@ -110,6 +110,7 @@ object CenterionApi {
                 }
                 writeText("question", question)
                 writeText("user_id", "android_user")
+                if (kind != null) writeText("kind", kind)
                 val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
                 val fileName = "centerion_upload"
                 output.write("--$boundary\r\n".toByteArray())
