@@ -92,7 +92,7 @@ object CenterionApi {
     }
 
     private fun uploadMultipart(context: Context, uri: Uri, question: String, endpoint: String): String {
-        val boundary = "Centerion-${UUID.randomUUID()}"
+        val boundary = "Centerion-\${UUID.randomUUID()}"
         val connection = (URL("$BASE_URL$endpoint").openConnection() as HttpURLConnection)
         return try {
             connection.requestMethod = "POST"
@@ -103,28 +103,29 @@ object CenterionApi {
             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
             connection.outputStream.use { output ->
                 fun writeText(name: String, value: String) {
-                    output.write("--$boundary\\r\\n".toByteArray())
-                    output.write("Content-Disposition: form-data; name="$name"\\r\\n\\r\\n".toByteArray())
+                    output.write("--$boundary\r\n".toByteArray())
+                    output.write("Content-Disposition: form-data; name=\"$name\"\r\n\r\n".toByteArray())
                     output.write(value.toByteArray(Charsets.UTF_8))
-                    output.write("\\r\\n".toByteArray())
+                    output.write("\r\n".toByteArray())
                 }
                 writeText("question", question)
                 writeText("user_id", "android_user")
                 val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
                 val fileName = "centerion_upload"
-                output.write("--$boundary\\r\\n".toByteArray())
-                output.write("Content-Disposition: form-data; name="file"; filename="$fileName"\\r\\n".toByteArray())
-                output.write("Content-Type: $mime\\r\\n\\r\\n".toByteArray())
+                output.write("--$boundary\r\n".toByteArray())
+                output.write("Content-Disposition: form-data; name=\"file\"; filename=\"$fileName\"\r\n".toByteArray())
+                output.write("Content-Type: $mime\r\n\r\n".toByteArray())
                 val input = context.contentResolver.openInputStream(uri)
                     ?: throw IllegalStateException("Не удалось открыть выбранный файл")
                 input.use { it.copyTo(output) }
-                output.write("\\r\\n--$boundary--\\r\\n".toByteArray())
+                output.write("\r\n--$boundary--\r\n".toByteArray())
             }
             readResponse(connection)
         } finally {
             connection.disconnect()
         }
     }
+
     private fun readResponse(connection: HttpURLConnection): String {
         val status = connection.responseCode
         val stream = if (status in 200..299) connection.inputStream else connection.errorStream
