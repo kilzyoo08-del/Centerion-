@@ -1,7 +1,12 @@
 -- REVIEW ONLY — do not execute against production without explicit approval.
--- Read-only audit on 2026-11-09 confirmed anon and authenticated have broad table
--- privileges (including TRUNCATE, REFERENCES, TRIGGER and MAINTAIN) on the five
--- public Centerion tables. RLS does not protect TRUNCATE.
+-- Read-only audit on 2026-11-16 confirmed 70 direct grant entries across the five
+-- existing public Centerion tables: 7 privileges x 2 client roles x 5 tables
+-- (DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE). Existing table
+-- grants do not include MAINTAIN. RLS does not protect TRUNCATE.
+--
+-- The same audit found 48 default-ACL entries for future public objects created
+-- by postgres or supabase_admin: future tables (including MAINTAIN), sequences,
+-- and functions, granted to anon/authenticated. These defaults are reviewed below.
 --
 -- The Edge Function verifies the Supabase JWT, derives user_id/owner_id from
 -- auth.getUser(), then uses the server-side service_role. No owner ID is trusted
