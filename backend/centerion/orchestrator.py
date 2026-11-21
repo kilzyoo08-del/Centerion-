@@ -27,7 +27,7 @@ def answer(user_id: str, message: str, external_context: str = "") -> str:
     facts = storage.get_facts(user_id)
     context = ""
     if facts: context += "Сохранённые факты о пользователе:\n" + "\n".join(f"- {f}" for f in facts)
-    messages = [{"role":"system","content":SYSTEM + ("\n\n" + context if context else "")}]
+    messages = [{"role":"system","content":SYSTEM + ("\n\n" + context if context else "") + ("\n\nДополнительный контекст памяти:\n" + external_context[:4000] if external_context else "")}]
     messages.extend(history[-10:])
     messages.append({"role":"user","content":message})
     response = generate(messages)
