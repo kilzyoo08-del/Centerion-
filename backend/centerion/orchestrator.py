@@ -22,7 +22,7 @@ def choose_core(task: str, has_file: bool = False, has_image: bool = False, lang
     return "chat"
 
 
-def answer(user_id: str, message: str) -> str:
+def answer(user_id: str, message: str, external_context: str = "") -> str:
     history = storage.get_history(user_id)
     facts = storage.get_facts(user_id)
     context = ""
