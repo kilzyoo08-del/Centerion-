@@ -9,9 +9,11 @@ android {
     val centerionSupabaseUrl = providers.gradleProperty("CENTERION_SUPABASE_URL")
         .orElse(providers.environmentVariable("CENTERION_SUPABASE_URL"))
         .getOrElse("https://tdqyhptkrmxoohfpfwvs.supabase.co")
+    // Supabase publishable key is intended for client apps; RLS/JWT remain mandatory.
+    // Server-side service-role keys and inference tokens are never embedded here.
     val centerionPublishableKey = providers.gradleProperty("CENTERION_SUPABASE_PUBLISHABLE_KEY")
         .orElse(providers.environmentVariable("CENTERION_SUPABASE_PUBLISHABLE_KEY"))
-        .getOrElse("")
+        .getOrElse("sb_publishable_OKARoPWiPrjPRAWVk2B8Aw_1DHn6asH")
     fun buildConfigString(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
     namespace = "com.mykolzyai.studio"
     compileSdk = 35
@@ -31,7 +33,6 @@ android {
         compose = true
         buildConfig = true
     }
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
