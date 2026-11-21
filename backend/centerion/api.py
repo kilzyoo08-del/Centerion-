@@ -11,7 +11,7 @@ from . import storage
 from .model import is_configured
 from .orchestrator import answer, analyze_file, generate_code, choose_core
 
-app = FastAPI(title="Centerion Runtime", version="2.1.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="Centerion Runtime", version="2.1.0", docs_url=None, redoc_url=None, openapi_url=None)
 
 @app.on_event("startup")
 def startup():
