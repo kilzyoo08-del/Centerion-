@@ -1,30 +1,43 @@
-"""Lazy Qwen-compatible text model adapter. Model files stay outside the APK."""
+"""Local Centerion model adapter. No implicit third-party model fallback."""
 from __future__ import annotations
 import os
 import threading
+from pathlib import Path
 
 _MODEL = None
 _TOKENIZER = None
 _LOCK = threading.Lock()
 
+def configured_model_path() -> Path | None:
+    raw = os.getenv("CENTERION_MODEL_PATH", "").strip()
+    if not raw:
+        return None
+    path = Path(raw)
+    if not path.is_dir() or not (path / "config.json").is_file():
+        return None
+    return path
+
+def is_configured() -> bool:
+    return configured_model_path() is not None
 
 def _load():
     global _MODEL, _TOKENIZER
     if _MODEL is not None and _TOKENIZER is not None:
         return _MODEL, _TOKENIZER
+    model_path = configured_model_path()
+    if model_path is None:
+        raise RuntimeError("Centerion model weights are not installed in CENTERION_MODEL_PATH.")
     with _LOCK:
         if _MODEL is None:
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
-            model_id = os.getenv("CENTERION_MODEL_PATH", "/kaggle/working/centerion_qwen3_4b")
-            _TOKENIZER = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+            _TOKENIZER = AutoTokenizer.from_pretrained(str(model_path), local_files_only=True)
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             _MODEL = AutoModelForCausalLM.from_pretrained(
-                model_id, torch_dtype=dtype, device_map="auto", trust_remote_code=True
+                str(model_path), torch_dtype=dtype, device_map="auto", local_files_only=True
             )
             _MODEL.eval()
     return _MODEL, _TOKENIZER
-
 
 def generate(messages: list[dict[str, str]], max_new_tokens: int = 700) -> str:
     model, tokenizer = _load()
