@@ -1,3 +1,13 @@
+---
+title: Centerion
+emoji: 🧠
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Centerion — Android app and modular AI backend
 
 Android-приложение на Kotlin + Jetpack Compose и отдельный Python backend.
