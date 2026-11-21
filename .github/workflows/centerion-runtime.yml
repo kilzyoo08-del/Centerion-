@@ -1,0 +1,71 @@
+name: Centerion runtime container
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "railway.toml"
+      - "backend/centerion/**"
+      - "backend/requirements-server.txt"
+      - ".github/workflows/centerion-runtime.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "railway.toml"
+      - "backend/centerion/**"
+      - "backend/requirements-server.txt"
+      - ".github/workflows/centerion-runtime.yml"
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runtime image
+        run: docker build -t centerion-runtime:test .
+      - name: Run authenticated API smoke test
+        shell: bash
+        run: |
+          docker run -d --rm --name centerion-runtime-test -p 8000:8000 \
+            -e CENTERION_RUNTIME_TOKEN=ci-test-token centerion-runtime:test
+          trap 'docker stop centerion-runtime-test >/dev/null 2>&1 || true' EXIT
+          python3 - <<'PY'
+          import json, time, urllib.request, urllib.error
+          base = "http://127.0.0.1:8000"
+          for _ in range(30):
+              try:
+                  with urllib.request.urlopen(base + "/v1/health", timeout=2) as r:
+                      health = json.load(r)
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise SystemExit("runtime did not become healthy")
+          assert health["name"] == "Centerion"
+          assert health["status"] == "degraded"
+          assert health["model_loaded"] is False
+          try:
+              urllib.request.urlopen(base + "/v1/kernels", timeout=3)
+              raise AssertionError("internal route unexpectedly allowed anonymous access")
+          except urllib.error.HTTPError as e:
+              assert e.code == 401
+          req = urllib.request.Request(
+              base + "/v1/kernels",
+              headers={"x-centerion-runtime-token": "ci-test-token"}
+          )
+          with urllib.request.urlopen(req, timeout=3) as r:
+              kernels = json.load(r)
+          assert any(k["id"] == "chat" for k in kernels["kernels"])
+          body = json.dumps({"message":"test","user_id":"ci-user"}).encode()
+          req = urllib.request.Request(
+              base + "/v1/chat", data=body, method="POST",
+              headers={"Content-Type":"application/json",
+                       "x-centerion-runtime-token":"ci-test-token"}
+          )
+          try:
+              urllib.request.urlopen(req, timeout=3)
+              raise AssertionError("chat should not pretend a model is installed")
+          except urllib.error.HTTPError as e:
+              assert e.code == 503
+          print("Centerion runtime smoke test passed; model absence reported honestly.")
+          PY
