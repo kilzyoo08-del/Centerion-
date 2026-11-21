@@ -45,3 +45,19 @@ uvicorn centerion.api:app --app-dir backend --host 0.0.0.0 --port 8000
 - Add authentication/API keys, per-user authorization, rate limits, file scanning, quotas and HTTPS controls before public deployment.
 - The Android UI currently exposes chat and photo selection. Document/code/memory backend endpoints and client methods are foundations; wire them into UI and test end-to-end before describing them as finished user features.
 - Do not commit model weights, tokens, API keys or private user documents to Git.
+
+
+## Развёртывание контейнера
+
+В корне репозитория есть `Dockerfile` и `railway.toml`. Они запускают защищённый внутренний API на порту платформы и сохраняют SQLite в `/data/centerion.sqlite3`.
+
+### Обязательные настройки хостинга
+
+- `CENTERION_RUNTIME_TOKEN` — длинный случайный секрет; задать в переменных окружения сервиса.
+- `CENTERION_DB_PATH=/data/centerion.sqlite3` — путь к БД.
+- Подключить постоянный volume к `/data`, иначе локальная SQLite не гарантирует долговременную память.
+- Для локального inference нужен отдельный volume с собственными весами по `/models/centerion` и установка `backend/requirements-model.txt`. Пока весов нет, сервер честно сообщает `model_loaded=false` и чат отвечает 503.
+- В Supabase Edge Function secrets задать `CENTERION_RUNTIME_URL` (HTTPS URL развёрнутого сервиса) и `CENTERION_RUNTIME_TOKEN` (тот же секрет). Эти секреты нельзя помещать в Android или GitHub.
+- Публичный Android-клиент обращается только к Supabase Edge Function `centerion`; сам runtime принимает защищённые внутренние запросы.
+
+Контейнер не содержит модельных весов и не загружает внешнюю модель автоматически. Vision пока не подключено.
