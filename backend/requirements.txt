@@ -7,6 +7,8 @@ python-docx>=1.1,<2
 openpyxl>=3.1,<4
 pandas>=2.2,<4
 Pillow>=10,<13
-transformers>=4.45
+# Qwen3 requires a recent Transformers release (4.51+).
+transformers>=4.51.0,<6
 accelerate>=1.0
-torch
+safetensors>=0.4.5
+torch>=2.4
