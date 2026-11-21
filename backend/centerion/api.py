@@ -10,7 +10,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
 from pydantic import BaseModel, Field
 
 from . import storage
-from .model import get_status as model_status, load_model
+from .model import generate, get_status as model_status, load_model
 from .orchestrator import answer, analyze_file, generate_code, choose_core
 
 app = FastAPI(title="Centerion API", version="4.0.0")
