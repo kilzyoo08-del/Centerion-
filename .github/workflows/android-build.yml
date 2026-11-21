@@ -15,7 +15,7 @@ jobs:
     name: Assemble debug APK
     runs-on: ubuntu-latest
     env:
-      CENTERION_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CENTERION_SUPABASE_PUBLISHABLE_KEY }}
+      CENTERION_SUPABASE_PUBLISHABLE_KEY: ${{ vars.CENTERION_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_OKARoPWiPrjPRAWVk2B8Aw_1DHn6asH' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
