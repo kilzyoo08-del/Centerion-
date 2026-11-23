@@ -85,14 +85,16 @@ test("Centerion still derives the owner from verified Supabase Auth, never reque
 });
 
 test("source mirror matches deployed Centerion v12 runtime contract", async () => {
-  const source = await readFile(new URL("../centerion/index.ts", import.meta.url), "utf8");
-  assert.match(source, /const API_VERSION = "1\\.2\\.0"/);
-  assert.match(source, /CENTERION_RUNTIME_URL/);
-  assert.match(source, /CENTERION_RUNTIME_TOKEN/);
-  assert.match(source, /AbortSignal\\.timeout\\(30000\\)/);
-  assert.match(source, /model_unavailable/);
-  assert.match(source, /readJsonObject\\(req, MAX_BODY\\)/);
-  assert.match(source, /\\.eq\\("owner_id", userId\\)/);
-  assert.doesNotMatch(source, /req\\.text\\(\\)/);
-  assert.doesNotMatch(source, /\\bKOLAI_URL\\b|\\bKOLAI_TOKEN\\b|kolai_3m_v1/);
+  const deployed = await readFile(new URL("../centerion/index.ts", import.meta.url), "utf8");
+  assert.ok(deployed.includes('const API_VERSION = "1.2.0";'));
+  assert.ok(deployed.includes("CENTERION_RUNTIME_URL"));
+  assert.ok(deployed.includes("CENTERION_RUNTIME_TOKEN"));
+  assert.ok(deployed.includes("signal: AbortSignal.timeout(30000)"));
+  assert.ok(deployed.includes("model_unavailable"));
+  assert.ok(deployed.includes("readJsonObject(req, MAX_BODY)"));
+  assert.ok(deployed.includes('.eq("owner_id", userId)'));
+  assert.ok(!deployed.includes("req.text()"));
+  assert.ok(!deployed.includes("KOLAI_URL"));
+  assert.ok(!deployed.includes("KOLAI_TOKEN"));
+  assert.ok(!deployed.includes("kolai_3m_v1"));
 });
