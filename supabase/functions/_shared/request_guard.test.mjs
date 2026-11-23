@@ -83,3 +83,16 @@ test("Centerion still derives the owner from verified Supabase Auth, never reque
   assert.doesNotMatch(source, /body\.(owner_id|user_id)/);
   assert.match(source, /readJsonObject\(req, MAX_BODY\)/);
 });
+
+test("source mirror matches deployed Centerion v12 runtime contract", async () => {
+  const source = await readFile(new URL("../centerion/index.ts", import.meta.url), "utf8");
+  assert.match(source, /const API_VERSION = "1\\.2\\.0"/);
+  assert.match(source, /CENTERION_RUNTIME_URL/);
+  assert.match(source, /CENTERION_RUNTIME_TOKEN/);
+  assert.match(source, /AbortSignal\\.timeout\\(30000\\)/);
+  assert.match(source, /model_unavailable/);
+  assert.match(source, /readJsonObject\\(req, MAX_BODY\\)/);
+  assert.match(source, /\\.eq\\("owner_id", userId\\)/);
+  assert.doesNotMatch(source, /req\\.text\\(\\)/);
+  assert.doesNotMatch(source, /\\bKOLAI_URL\\b|\\bKOLAI_TOKEN\\b|kolai_3m_v1/);
+});
