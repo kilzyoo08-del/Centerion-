@@ -6,9 +6,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const API_VERSION = "1.2.0";
-const KOLAI_URL = Deno.env.get("CENTERION_KOLAI_URL") ?? "";
-const KOLAI_TOKEN = Deno.env.get("CENTERION_KOLAI_TOKEN") ?? "";
-function kolaiBaseUrl() { let u = KOLAI_URL.trim(); while (u.endsWith("/")) u = u.slice(0, -1); return u; }
+const CENTERION_RUNTIME_URL = Deno.env.get("CENTERION_RUNTIME_URL") ?? "";
+const CENTERION_RUNTIME_TOKEN = Deno.env.get("CENTERION_RUNTIME_TOKEN") ?? "";
+function runtimeBaseUrl() { let u = CENTERION_RUNTIME_URL.trim(); while (u.endsWith("/")) u = u.slice(0, -1); return u; }
 const MAX_BODY = 32_000;
 const MAX_MESSAGE = 12_000;
 
@@ -48,9 +48,9 @@ Deno.serve(async (req: Request) => {
   const path = routePath(new URL(req.url));
   if (req.method === "GET" && (path === "/health" || path === "/v1/health")) {
     let modelLoaded = false;
-    if (KOLAI_URL && KOLAI_TOKEN) {
+    if (CENTERION_RUNTIME_URL && CENTERION_RUNTIME_TOKEN) {
       try {
-        const upstreamHealth = await fetch(kolaiBaseUrl() + "/v1/health", {
+        const upstreamHealth = await fetch(runtimeBaseUrl() + "/v1/health", {
           signal: AbortSignal.timeout(4000),
         });
         if (upstreamHealth.ok) {
@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
       api_version: API_VERSION,
       model_loaded: modelLoaded,
       memory_ready: true,
-      reason: modelLoaded ? "kolai_upstream_ready" : "language_core_not_connected",
+      reason: modelLoaded ? "centerion_runtime_ready" : "language_core_not_connected",
     }, 200, requestId);
   }
 
@@ -85,10 +85,10 @@ Deno.serve(async (req: Request) => {
     });
 
     if (req.method === "GET" && path === "/v1/kernels") {
-      if (!KOLAI_URL || !KOLAI_TOKEN) return error(req, "model_unavailable", 503, requestId);
+      if (!CENTERION_RUNTIME_URL || !CENTERION_RUNTIME_TOKEN) return error(req, "model_unavailable", 503, requestId);
       try {
-        const upstream = await fetch(kolaiBaseUrl() + "/v1/kernels", {
-          headers: { "Authorization": "Bearer " + KOLAI_TOKEN },
+        const upstream = await fetch(runtimeBaseUrl() + "/v1/kernels", {
+          headers: { "x-centerion-runtime-token": CENTERION_RUNTIME_TOKEN },
           signal: AbortSignal.timeout(8000),
         });
         if (!upstream.ok) return error(req, "model_unavailable", 503, requestId);
@@ -98,16 +98,16 @@ Deno.serve(async (req: Request) => {
 
     const kernelMatch = path.match(/^\/v1\/kernels\/([a-zA-Z0-9_]+)$/);
     if (req.method === "POST" && kernelMatch) {
-      if (!KOLAI_URL || !KOLAI_TOKEN) return error(req, "model_unavailable", 503, requestId);
+      if (!CENTERION_RUNTIME_URL || !CENTERION_RUNTIME_TOKEN) return error(req, "model_unavailable", 503, requestId);
       const body = await readBody(req);
       const query = safeString(body.query, MAX_MESSAGE);
       const context = body.context && typeof body.context === "object" && !Array.isArray(body.context)
         ? body.context : {};
       try {
-        const upstream = await fetch(kolaiBaseUrl() + "/v1/kernels/" + kernelMatch[1], {
+        const upstream = await fetch(runtimeBaseUrl() + "/v1/kernels/" + kernelMatch[1], {
           method: "POST",
-          headers: { "Authorization": "Bearer " + KOLAI_TOKEN, "Content-Type": "application/json" },
-          body: JSON.stringify({ query, context }),
+          headers: { "x-centerion-runtime-token": CENTERION_RUNTIME_TOKEN, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: query, user_id: userId, context }),
           signal: AbortSignal.timeout(15000),
         });
         if (upstream.status === 403) return error(req, "approval_required", 403, requestId);
@@ -231,7 +231,7 @@ Deno.serve(async (req: Request) => {
       const body = await readBody(req);
       const message = safeString(body.message, MAX_MESSAGE);
       if (!message) return error(req, "invalid_request", 400, requestId);
-      if (!KOLAI_URL || !KOLAI_TOKEN) return error(req, "model_unavailable", 503, requestId);
+      if (!CENTERION_RUNTIME_URL || !CENTERION_RUNTIME_TOKEN) return error(req, "model_unavailable", 503, requestId);
 
       const conversationId = safeString(body.conversation_id, 64);
       if (conversationId && !/^[0-9a-f-]{36}$/i.test(conversationId)) {
@@ -258,11 +258,11 @@ Deno.serve(async (req: Request) => {
 
       let upstream: Response;
       try {
-        upstream = await fetch(kolaiBaseUrl() + "/v1/chat", {
+        upstream = await fetch(runtimeBaseUrl() + "/v1/chat", {
           method: "POST",
-          headers: { "Authorization": "Bearer " + KOLAI_TOKEN, "Content-Type": "application/json" },
+          headers: { "x-centerion-runtime-token": CENTERION_RUNTIME_TOKEN, "Content-Type": "application/json" },
           body: JSON.stringify({
-            message, conversation_id: conversationId || null, request_id: requestId,
+            message, user_id: userId, conversation_id: conversationId || null, request_id: requestId,
             context: { memory_context: memoryContext },
           }),
           signal: AbortSignal.timeout(30000),
@@ -280,7 +280,7 @@ Deno.serve(async (req: Request) => {
       let savedConversationId = conversationId;
       if (!savedConversationId) {
         const { data: created, error: createError } = await db.from("centerion_conversations")
-          .insert({ user_id: userId, title: message.slice(0, 80), model: "kolai_3m_v1" })
+          .insert({ user_id: userId, title: message.slice(0, 80), model: "centerion_runtime_v1" })
           .select("id").single();
         if (createError) throw createError;
         savedConversationId = created.id;
@@ -292,20 +292,20 @@ Deno.serve(async (req: Request) => {
         { conversation_id: savedConversationId, user_id: userId, role: "user", content: message,
           metadata: { request_id: requestId } },
         { conversation_id: savedConversationId, user_id: userId, role: "assistant", content: answer,
-          metadata: { request_id: requestId, model: generated.model ?? { name: "centerion", version: "kolai_3m_v1" },
+          metadata: { request_id: requestId, model: generated.model ?? { name: "centerion", version: "centerion_runtime_v1" },
             verification_status: verificationStatus, tool_summary: toolSummary } },
       ]).select("id,role");
       if (saveError) throw saveError;
       const assistantMessage = (savedMessages ?? []).find((m: any) => m.role === "assistant");
       await db.from("centerion_conversations").update({
-        updated_at: new Date().toISOString(), model: "kolai_3m_v1",
+        updated_at: new Date().toISOString(), model: "centerion_runtime_v1",
       }).eq("id", savedConversationId).eq("user_id", userId);
 
       return json(req, {
         conversation_id: savedConversationId,
         message_id: assistantMessage?.id ?? null,
         answer,
-        model: generated.model ?? { name: "centerion", version: "kolai_3m_v1" },
+        model: generated.model ?? { name: "centerion", version: "centerion_runtime_v1" },
         memory_sources: memoryRows.map((m) => ({ id: m.id, title: m.title })),
         tool_summary: toolSummary,
         verification_status: verificationStatus,
