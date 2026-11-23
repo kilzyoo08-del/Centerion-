@@ -98,3 +98,9 @@ test("source mirror matches deployed Centerion v12 runtime contract", async () =
   assert.ok(!deployed.includes("KOLAI_TOKEN"));
   assert.ok(!deployed.includes("kolai_3m_v1"));
 });
+
+test("platform JWT verification remains enabled for Centerion", async () => {
+  const config = await readFile(new URL("../../config.toml", import.meta.url), "utf8");
+  assert.ok(/^\\[functions\\.centerion\\]\\s*$/m.test(config));
+  assert.ok(/^verify_jwt\\s*=\\s*true\\s*$/m.test(config));
+});
